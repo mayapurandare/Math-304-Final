@@ -5,6 +5,8 @@ ls()
 ###feature names 
 print(names(dat.cp))
 
+head(dat.cp)
+
 
 ##forward selection
 ##create full and null 
@@ -57,12 +59,15 @@ library(ggcorrplot)
 ggcorrplot(cor_matrix, lab = TRUE)
 
 
-## RES 5 uses types of engines
+## RES 5 uses types of car body
 res5 = lm(PRICE ~ SIZE + FRONT + BORERATIO + RPM + ASP + STROKE + 
             SEDAN + HATCH + CONV + WAGON + WEIGHT, data = dat.cp)
 summary(res5)
 vif(res5)
+PRESS(res5)
+ols_mallows_cp(model=res5, fullmodel=res.full)
 plot(res.best$fitted.values,resid(res5),xlab="Fitted Values",ylab="Residuals")
+plot(res5)
 
 
 ## RES 6 removes engine types and weight
@@ -71,6 +76,7 @@ summary(res6)
 vif(res6)
 PRESS(res6)
 ols_mallows_cp(model=res6, fullmodel=res.full)
+plot(res6)
 
 # DO PRESS AND MALLOWS CP FOR WRITE UP
 
@@ -156,21 +162,22 @@ qqline(err)
 
 
 # RES 7 LOG TRANSFORM PRICE
-data.cp = within(dat.cp, {
-  lnPRICE = log(PRICE)
+dat.cp = within(dat.cp, {
+  lnPRICE = log(dat.cp$PRICE)
   lnSIZE = log(dat.cp$SIZE)
   lnBORERATIO = log(dat.cp$BORERATIO)
   lnRPM = log(dat.cp$RPM)
   lnSTROKE = log(dat.cp$STROKE)
 })
-res7 = lm(lnPRICE ~ lnSIZE + FRONT + lnBORERATIO + lnRPM + 
-            ASP + lnSTROKE, data = dat.cp)
+res7 = lm(lnPRICE ~ SIZE + FRONT + BORERATIO + RPM + 
+            ASP + STROKE, data = dat.cp)
 summary(res7)
 
 plot(res7$fitted.values,resid(res7),xlab="Fitted Values",ylab="Residuals")
 vif(res7)
 PRESS(res7)
 ols_mallows_cp(model=res7, fullmodel=res.full)
+plot(res7)
 
 ## QQ PLOTS
 student.err=rstandard(res7) #studentized residual
@@ -187,15 +194,15 @@ which(rstudent>3)
 
 
 
+
 #Find the influence measurements
 ###leverage
 hatvalues(res7)
 round(hatvalues(res7),3)
 #If you have a big dataset, you can use which( ) to detect potential influence points
 #for example, the cutoff for leverage is 24/205=0.117
-#observations 18 and 27 have hat values greater than the cutoff
 which(hatvalues(res7)>0.03414)
-#check the studentized residuals for observations 18 and 27
+#check the studentized residuals for observations
 #if their R-studnts are small, then they might not be influence points
 round(rstudent(res7),3)
 
@@ -217,3 +224,16 @@ round(df7,3)
 #report potential influence (leverage) observations based on each measurement
 which(abs(dffits(res7))>0.36957)
 which(abs(dfbetas(res7))>0.1397, arr.ind=TRUE)
+
+## removing Leverage Points
+dat.cp2 = dat.cp
+dat.cp2 = dat.cp[-c(3, 9, 15, 50, 57, 58, 59, 67, 74, 114, 135, 139, 193, 204), ]
+
+res8 = lm(lnPRICE ~ SIZE + FRONT + BORERATIO + RPM + 
+            ASP + STROKE, data = dat.cp2)
+
+summary(res8)
+PRESS(res8)
+ols_mallows_cp(model=res8, fullmodel=res5)
+plot(res8)
+
